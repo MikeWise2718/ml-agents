@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using MLAgents;
+using MLAgents.In;
 using TMPro;
 using Barracuda;
 
@@ -72,12 +73,11 @@ public class CmvAgent : Agent
     }
     private void Awake()
     {
-        //SetupAgentSpaceType(SpaceType.Continuous);
+        SetupAgentSpaceType();
     }
-    //public void SetupAgentSpaceType(SpaceType reqstype)
-    //{
-    //    var bbp = GetComponent<Behaviour>();
-    //    var bphp = GetComponent<BehaviorParameters>();
+    public void SetupAgentSpaceType()
+    {
+        var bphp = GetComponent<MLAgents.Policies>();
     //    bphp.m_BehaviorName = "CrowdMove";
     //    //bhp.m_UseHeuristic = true;
     //    var fname = "CrowdMove.nn";
@@ -105,7 +105,7 @@ public class CmvAgent : Agent
     //                break;
     //            }
     //    }       
-    //}
+    }
     public override void InitializeAgent()
     {
         // called by Agent.OnEnableHelper that is called when the agent is enabled or becomes active
