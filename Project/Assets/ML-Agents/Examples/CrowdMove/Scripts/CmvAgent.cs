@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using MLAgents;
-using MLAgents.In;
 using TMPro;
 using Barracuda;
 
@@ -77,7 +76,7 @@ public class CmvAgent : Agent
     }
     public void SetupAgentSpaceType()
     {
-        var bphp = GetComponent<MLAgents.Policies>();
+        //var bphp = GetComponent<MLAgents.Policies>();
     //    bphp.m_BehaviorName = "CrowdMove";
     //    //bhp.m_UseHeuristic = true;
     //    var fname = "CrowdMove.nn";
