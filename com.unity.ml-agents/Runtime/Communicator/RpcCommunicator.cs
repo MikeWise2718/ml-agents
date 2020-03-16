@@ -505,17 +505,13 @@ namespace MLAgents
                     "side channels of the same id.", channelId));
             }
 
-            // Process any messages that we've already received for this channel ID.
             var numMessages = m_CachedMessages.Count;
             for (int i = 0; i < numMessages; i++)
             {
                 var cachedMessage = m_CachedMessages.Dequeue();
                 if (channelId == cachedMessage.ChannelId)
                 {
-                    using (var incomingMsg = new IncomingMessage(cachedMessage.Message))
-                    {
-                        sideChannel.OnMessageReceived(incomingMsg);
-                    }
+                    sideChannel.OnMessageReceived(cachedMessage.Message);
                 }
                 else
                 {
@@ -585,10 +581,7 @@ namespace MLAgents
                 var cachedMessage = m_CachedMessages.Dequeue();
                 if (sideChannels.ContainsKey(cachedMessage.ChannelId))
                 {
-                    using (var incomingMsg = new IncomingMessage(cachedMessage.Message))
-                    {
-                        sideChannels[cachedMessage.ChannelId].OnMessageReceived(incomingMsg);
-                    }
+                    sideChannels[cachedMessage.ChannelId].OnMessageReceived(cachedMessage.Message);
                 }
                 else
                 {
@@ -625,10 +618,7 @@ namespace MLAgents
                         }
                         if (sideChannels.ContainsKey(channelId))
                         {
-                            using (var incomingMsg = new IncomingMessage(message))
-                            {
-                                sideChannels[channelId].OnMessageReceived(incomingMsg);
-                            }
+                            sideChannels[channelId].OnMessageReceived(message);
                         }
                         else
                         {
