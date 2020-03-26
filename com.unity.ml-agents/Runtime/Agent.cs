@@ -786,6 +786,7 @@ namespace MLAgents
         /// Used by the brain to make the agent perform a step.
         void AgentStep()
         {
+            Debug.Log($"AgentStep {name} m_RequestAction:{m_RequestAction} m_Brain!=null:{m_Brain!=null}");
             if ((m_RequestAction) && (m_Brain != null))
             {
                 m_RequestAction = false;

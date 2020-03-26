@@ -8,7 +8,7 @@ namespace MLAgents
     /// at regular intervals.
     /// </summary>
     [AddComponentMenu("ML Agents/Decision Requester", (int)MenuGroup.Default)]
-    internal class DecisionRequester : MonoBehaviour
+    public class DecisionRequester : MonoBehaviour
     {
         /// <summary>
         /// The frequency with which the agent requests a decision. A DecisionPeriod of 5 means
@@ -59,12 +59,17 @@ namespace MLAgents
 
         void MakeRequests(int count)
         {
+            if (m_Agent==null)
+            {
+                Awake();
+            }
             if ((count + m_Offset) % DecisionPeriod == 0)
             {
                 m_Agent?.RequestDecision();
             }
             if (TakeActionsBetweenDecisions)
             {
+                Debug.Log($"Requesting Decisons {name}");
                 m_Agent?.RequestAction();
             }
         }

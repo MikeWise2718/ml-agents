@@ -20,6 +20,7 @@ public class HallwayAgent : Agent
 
     public override void Initialize()
     {
+        Debug.Log($"Called Heuristic Initialize on {name}");
         m_HallwaySettings = FindObjectOfType<HallwaySettings>();
         m_AgentRb = GetComponent<Rigidbody>();
         m_GroundRenderer = ground.GetComponent<Renderer>();
@@ -68,6 +69,7 @@ public class HallwayAgent : Agent
 
     public override void OnActionReceived(float[] vectorAction)
     {
+        Debug.Log($"Called OnActionReceived Override on {name}");
         AddReward(-1f / maxStep);
         MoveAgent(vectorAction);
     }
@@ -93,6 +95,7 @@ public class HallwayAgent : Agent
 
     public override float[] Heuristic()
     {
+        Debug.Log($"Called Heuristic Override on {name}");
         if (Input.GetKey(KeyCode.D))
         {
             return new float[] { 3 };
@@ -114,6 +117,7 @@ public class HallwayAgent : Agent
 
     public override void OnEpisodeBegin()
     {
+        Debug.Log($"Called Heuristic OnEpisodeBegin on {name}");
         var agentOffset = -15f;
         var blockOffset = 0f;
         m_Selection = Random.Range(0, 2);
