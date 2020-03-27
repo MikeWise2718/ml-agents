@@ -20,7 +20,7 @@ public class CmvAgent : Agent
     public GameObject redGoal;
     public List<CmvAgent> otherAgents;
     public bool useVectorObs;
-    RayPerceptionSensorComponent3D rayPer;
+    public RayPerceptionSensorComponent3D rayPer;
 
     Material groundMaterial;
     Renderer groundRenderer;
@@ -89,10 +89,6 @@ public class CmvAgent : Agent
         groundMaterial = groundRenderer.material;
         cmvagbod.InitializeAgentBody();
 
-        rayPer = gameObject.AddComponent<RayPerceptionSensorComponent3D>();
-        rayPer.detectableTags = new List<string>() { "redGoal", "agent", "wall", "wall", "wall" };
-        rayPer.raysPerDirection = 1;
-        rayPer.CreateSensor();
 
     }
     private void Awake()
@@ -236,9 +232,8 @@ public class CmvAgent : Agent
         Debug.Log($"Called CollectObservations override for {name} useVectorobs:{useVectorObs} ncollected:{ncollected}");
         if (useVectorObs)
         {
-            sensor.AddObservation(StepCount / (float)maxStep);
-            var rayobs = cmvagbod.Perceive();
-            sensor.AddObservation(rayobs);
+            var rayout = RayPerceptionSensor.Perceive(rayPer.GetRayPerceptionInput());
+            //sensor.AddObservation(rayout.rayOutputs[0]);
         }
         ncollected++;
     }
@@ -327,7 +322,7 @@ public class CmvAgent : Agent
             }
         }
         //var forceVek = dirToGo * academy.agentRunSpeed;
-        var forceVek = dirToGo;
+        var forceVek = dirToGo*.25f;
         var dist = Vector3.Magnitude(avatar.transform.position - lastpos);
         var force = Vector3.Magnitude(forceVek);
         //Debug.Log("Move "+name+" "+sType+" rot:"+rotateDir.ToString("F1")+" force:"+forceVek.ToString("F3")+" dst:"+dist.ToString("f1"));

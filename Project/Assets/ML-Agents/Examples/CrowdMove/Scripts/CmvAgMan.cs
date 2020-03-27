@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using MLAgents;
 using TMPro;
-
+using MLAgents.Sensors;
 
 public class ParmProcessor
 {
@@ -154,6 +154,12 @@ public class CmvAgMan : MonoBehaviour
             //ago.SetActive(false); // if we don't do this it gets enable events too soon (before we can init AgentParameters)
             ago.transform.parent = this.transform;
             var cmvag = ago.AddComponent<CmvAgent>();
+
+            cmvag.rayPer = ago.AddComponent<RayPerceptionSensorComponent3D>();
+            cmvag.rayPer.detectableTags = new List<string>() { "redGoal", "agent", "wall", "wall", "wall" };
+            cmvag.rayPer.raysPerDirection = 2;// rays to the left or right
+            cmvag.rayPer.CreateSensor();
+
             cmvag.LazyInitialize();
 
             cmvag.SetupAgent(this);

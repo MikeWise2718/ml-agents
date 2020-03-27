@@ -43,6 +43,7 @@ public class CmvAgentBody : MonoBehaviour
         //var rfvek = Quaternion.Euler(nrotVek) * forceVek;
         //Debug.Log("nrotVek:"+nrotVek.ToString("f1")+" forceVek:" + forceVek.ToString("f1") + "  rfvek:" + rfvek.ToString("f1"));
         rb.AddForce(forceVek, ForceMode.VelocityChange);
+        parentAgent.transform.position = transform.position;
     }
     public void AgentReset()
     {
