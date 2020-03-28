@@ -4,7 +4,7 @@ using UnityEngine;
 using MLAgents;
 using System;
 
-public class CmvAcademy  {
+public class CmvSettings  : MonoBehaviour {
 
     public float agentRunSpeed;
     public float agentRotationSpeed;
@@ -18,7 +18,8 @@ public class CmvAcademy  {
     public int attempts;
     public int totsteps;
     public float avgsteps;
-    public int timeDelayMsecs;
+    public int maxstep=2000;
+    public int timeDelayMsecs=0;
 
     public void RegisterSuccess(int nsteps)
     {

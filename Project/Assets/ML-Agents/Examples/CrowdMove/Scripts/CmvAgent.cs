@@ -63,7 +63,7 @@ public class CmvAgent : Agent
         visor.transform.localScale = new Vector3(0.95f, 0.25f, 0.5f);
         visor.transform.position   = new Vector3(0,   0.5f, -0.25f);
         CmvAgentBody.SetColorOfGo(visor, Color.black);
-        maxStep = 1000;
+        maxStep = cmvAgMan.cmvSettings.maxstep;
 
         cmvagbod.Init(this);
         var bhp = GetComponent<BehaviorParameters>();
@@ -375,7 +375,7 @@ public class CmvAgent : Agent
     public void ReachedGoal()
     {
         SetReward(5.0f);
-        //StartCoroutine(GoalScoredSwapGroundMaterial(academy.goalScoredMaterial, 1.0f));
+        StartCoroutine(GoalScoredSwapGroundMaterial(cmvAgMan.cmvSettings.goalScoredMaterial, 1.0f));
         //academy.RegisterSuccess(this.nmoves);
 
         //Debug.Log("Found goal - calling done in " + area.name + "   agent:" + name+" moves:"+nmoves);

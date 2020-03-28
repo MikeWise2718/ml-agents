@@ -112,6 +112,7 @@ public class CmvAgMan : MonoBehaviour
     public int nagents = 1;
     public GameObject ground;
     public GameObject redGoal;
+    public CmvSettings cmvSettings;
     public GameObject area;
     DecisionRequester dreq;
     //public BrainParameters brain;
@@ -127,6 +128,7 @@ public class CmvAgMan : MonoBehaviour
 #endif
         pp.Process();
         //pp.Dump();
+        cmvSettings = GameObject.FindObjectOfType<CmvSettings>();
         area = transform.parent.gameObject;
         ground = area.transform.Find("Ground").gameObject;
         //Debug.Log("Found ground");
