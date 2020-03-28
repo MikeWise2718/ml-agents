@@ -64,7 +64,7 @@ namespace MLAgents
         /// Unity package version of com.unity.ml-agents.
         /// This must match the version string in package.json and is checked in a unit test.
         /// </summary>
-        internal const string k_PackageVersion = "0.14.1-preview";
+        internal const string k_PackageVersion = "0.15.0-preview";
 
         const int k_EditorTrainingPort = 5004;
 
@@ -125,7 +125,7 @@ namespace MLAgents
         List<ModelRunner> m_ModelRunners = new List<ModelRunner>();
 
         // Flag used to keep track of the first time the Academy is reset.
-        bool m_FirstAcademyReset;
+        bool m_HadFirstReset;
 
         // The Academy uses a series of events to communicate with agents
         // to facilitate synchronization. More specifically, it ensure
@@ -236,6 +236,33 @@ namespace MLAgents
         }
 
         /// <summary>
+        /// Returns the SideChannel of Type T if there is one registered, or null if it doesn't.
+        /// If there are multiple SideChannels of the same type registered, the returned instance is arbitrary.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public T GetSideChannel<T>() where T: SideChannel
+        {
+            return Communicator?.GetSideChannel<T>();
+        }
+
+        /// <summary>
+        /// Returns all SideChannels of Type T that are registered. Use <see cref="GetSideChannel{T}()"/> if possible,
+        /// as that does not make any memory allocations.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public List<T> GetSideChannels<T>() where T: SideChannel
+        {
+            if (Communicator == null)
+            {
+                // Make sure we return a non-null List.
+                return new List<T>();
+            }
+            return Communicator.GetSideChannels<T>();
+        }
+
+        /// <summary>
         /// Disable stepping of the Academy during the FixedUpdate phase. If this is called, the Academy must be
         /// stepped manually by the user by calling Academy.EnvironmentStep().
         /// </summary>
@@ -334,6 +361,7 @@ namespace MLAgents
             {
                 Communicator.RegisterSideChannel(new EngineConfigurationChannel());
                 Communicator.RegisterSideChannel(floatProperties);
+                Communicator.RegisterSideChannel(new StatsSideChannel());
                 // We try to exchange the first message with Python. If this fails, it means
                 // no Python Process is ready to train the environment. In this case, the
                 //environment must use Inference.
@@ -437,7 +465,7 @@ namespace MLAgents
         {
             EnvironmentReset();
             AgentForceReset?.Invoke();
-            m_FirstAcademyReset = true;
+            m_HadFirstReset = true;
         }
 
         /// <summary>
@@ -446,7 +474,7 @@ namespace MLAgents
         /// </summary>
         public void EnvironmentStep()
         {
-            if (!m_FirstAcademyReset)
+            if (!m_HadFirstReset)
             {
                 ForcedFullReset();
             }

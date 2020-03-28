@@ -3,8 +3,6 @@ import logging
 import argparse
 
 import os
-import glob
-import shutil
 import numpy as np
 import json
 
@@ -21,6 +19,7 @@ from mlagents.trainers.stats import (
     CSVWriter,
     StatsReporter,
     GaugeWriter,
+    ConsoleWriter,
 )
 from mlagents_envs.environment import UnityEnvironment
 from mlagents.trainers.sampler_class import SamplerManager
@@ -30,6 +29,7 @@ from mlagents.trainers.subprocess_env_manager import SubprocessEnvManager
 from mlagents_envs.side_channel.side_channel import SideChannel
 from mlagents_envs.side_channel.engine_configuration_channel import EngineConfig
 from mlagents_envs.exception import UnityEnvironmentException
+from mlagents_envs.timers import hierarchical_timer, get_timer_tree
 from mlagents.logging_util import create_logger
 
 
@@ -89,7 +89,7 @@ def _create_parser():
     )
     argparser.add_argument(
         "--base-port",
-        default=5005,
+        default=UnityEnvironment.BASE_ENVIRONMENT_PORT,
         type=int,
         help="Base port for environment communication",
     )
@@ -98,12 +98,6 @@ def _create_parser():
         default=1,
         type=int,
         help="Number of parallel environments to use for training",
-    )
-    argparser.add_argument(
-        "--docker-target-name",
-        default=None,
-        dest="docker_target_name",
-        help="Docker volume to store training-specific files",
     )
     argparser.add_argument(
         "--no-graphics",
@@ -183,7 +177,6 @@ class RunOptions(NamedTuple):
     no_graphics: bool = parser.get_default("no_graphics")
     multi_gpu: bool = parser.get_default("multi_gpu")
     sampler_config: Optional[Dict] = None
-    docker_target_name: Optional[str] = parser.get_default("docker_target_name")
     env_args: Optional[List[str]] = parser.get_default("env_args")
     cpu: bool = parser.get_default("cpu")
     width: int = parser.get_default("width")
@@ -202,15 +195,8 @@ class RunOptions(NamedTuple):
           configs loaded from files.
         """
         argparse_args = vars(args)
-        docker_target_name = argparse_args["docker_target_name"]
         trainer_config_path = argparse_args["trainer_config_path"]
         curriculum_config_path = argparse_args["curriculum_config_path"]
-        if docker_target_name is not None:
-            trainer_config_path = f"/{docker_target_name}/{trainer_config_path}"
-            if curriculum_config_path is not None:
-                curriculum_config_path = (
-                    f"/{docker_target_name}/{curriculum_config_path}"
-                )
         argparse_args["trainer_config"] = load_config(trainer_config_path)
         if curriculum_config_path is not None:
             argparse_args["curriculum_config"] = load_config(curriculum_config_path)
@@ -248,81 +234,90 @@ def run_training(run_seed: int, options: RunOptions) -> None:
     :param run_seed: Random seed used for training.
     :param run_options: Command line arguments for training.
     """
-    # Recognize and use docker volume if one is passed as an argument
-    if not options.docker_target_name:
+    with hierarchical_timer("run_training.setup"):
         model_path = f"./models/{options.run_id}"
         summaries_dir = "./summaries"
-    else:
-        model_path = f"/{options.docker_target_name}/models/{options.run_id}"
-        summaries_dir = f"/{options.docker_target_name}/summaries"
-    port = options.base_port
+        port = options.base_port
 
-    # Configure CSV, Tensorboard Writers and StatsReporter
-    # We assume reward and episode length are needed in the CSV.
-    csv_writer = CSVWriter(
-        summaries_dir,
-        required_fields=["Environment/Cumulative Reward", "Environment/Episode Length"],
-    )
-    tb_writer = TensorboardWriter(summaries_dir)
-    gauge_write = GaugeWriter()
-    StatsReporter.add_writer(tb_writer)
-    StatsReporter.add_writer(csv_writer)
-    StatsReporter.add_writer(gauge_write)
+        # Configure CSV, Tensorboard Writers and StatsReporter
+        # We assume reward and episode length are needed in the CSV.
+        csv_writer = CSVWriter(
+            summaries_dir,
+            required_fields=[
+                "Environment/Cumulative Reward",
+                "Environment/Episode Length",
+            ],
+        )
+        tb_writer = TensorboardWriter(summaries_dir)
+        gauge_write = GaugeWriter()
+        console_writer = ConsoleWriter()
+        StatsReporter.add_writer(tb_writer)
+        StatsReporter.add_writer(csv_writer)
+        StatsReporter.add_writer(gauge_write)
+        StatsReporter.add_writer(console_writer)
 
-    if options.env_path is None:
-        port = UnityEnvironment.DEFAULT_EDITOR_PORT
-    env_factory = create_environment_factory(
-        options.env_path,
-        options.docker_target_name,
-        options.no_graphics,
-        run_seed,
-        port,
-        options.env_args,
-    )
-    engine_config = EngineConfig(
-        options.width,
-        options.height,
-        options.quality_level,
-        options.time_scale,
-        options.target_frame_rate,
-    )
-    env_manager = SubprocessEnvManager(env_factory, engine_config, options.num_envs)
-    maybe_meta_curriculum = try_create_meta_curriculum(
-        options.curriculum_config, env_manager, options.lesson
-    )
-    sampler_manager, resampling_interval = create_sampler_manager(
-        options.sampler_config, run_seed
-    )
-    trainer_factory = TrainerFactory(
-        options.trainer_config,
-        summaries_dir,
-        options.run_id,
-        model_path,
-        options.keep_checkpoints,
-        options.train_model,
-        options.load_model,
-        run_seed,
-        maybe_meta_curriculum,
-        options.multi_gpu,
-    )
-    # Create controller and begin training.
-    tc = TrainerController(
-        trainer_factory,
-        model_path,
-        summaries_dir,
-        options.run_id,
-        options.save_freq,
-        maybe_meta_curriculum,
-        options.train_model,
-        run_seed,
-        sampler_manager,
-        resampling_interval,
-    )
+        if options.env_path is None:
+            port = UnityEnvironment.DEFAULT_EDITOR_PORT
+        env_factory = create_environment_factory(
+            options.env_path, options.no_graphics, run_seed, port, options.env_args
+        )
+        engine_config = EngineConfig(
+            options.width,
+            options.height,
+            options.quality_level,
+            options.time_scale,
+            options.target_frame_rate,
+        )
+        env_manager = SubprocessEnvManager(env_factory, engine_config, options.num_envs)
+        maybe_meta_curriculum = try_create_meta_curriculum(
+            options.curriculum_config, env_manager, options.lesson
+        )
+        sampler_manager, resampling_interval = create_sampler_manager(
+            options.sampler_config, run_seed
+        )
+        trainer_factory = TrainerFactory(
+            options.trainer_config,
+            summaries_dir,
+            options.run_id,
+            model_path,
+            options.keep_checkpoints,
+            options.train_model,
+            options.load_model,
+            run_seed,
+            maybe_meta_curriculum,
+            options.multi_gpu,
+        )
+        # Create controller and begin training.
+        tc = TrainerController(
+            trainer_factory,
+            model_path,
+            summaries_dir,
+            options.run_id,
+            options.save_freq,
+            maybe_meta_curriculum,
+            options.train_model,
+            run_seed,
+            sampler_manager,
+            resampling_interval,
+        )
+
     # Begin training
     try:
         tc.start_learning(env_manager)
     finally:
         env_manager.close()
+        write_timing_tree(summaries_dir, options.run_id)
+
+
+def write_timing_tree(summaries_dir: str, run_id: str) -> None:
+    timing_path = f"{summaries_dir}/{run_id}_timers.json"
+    try:
+        with open(timing_path, "w") as f:
+            json.dump(get_timer_tree(), f, indent=4)
+    except FileNotFoundError:
+        logging.warning(
+            f"Unable to save to {timing_path}. Make sure the directory exists"
+        )
 
 
 def create_sampler_manager(sampler_config, run_seed=None):
@@ -360,33 +355,10 @@ def try_create_meta_curriculum(
         return meta_curriculum
 
 
-def prepare_for_docker_run(docker_target_name, env_path):
-    for f in glob.glob(
-        "/{docker_target_name}/*".format(docker_target_name=docker_target_name)
-    ):
-        if env_path in f:
-            try:
-                b = os.path.basename(f)
-                if os.path.isdir(f):
-                    shutil.copytree(f, "/ml-agents/{b}".format(b=b))
-                else:
-                    src_f = "/{docker_target_name}/{b}".format(
-                        docker_target_name=docker_target_name, b=b
-                    )
-                    dst_f = "/ml-agents/{b}".format(b=b)
-                    shutil.copyfile(src_f, dst_f)
-                    os.chmod(dst_f, 0o775)  # Make executable
-            except Exception as e:
-                logging.getLogger("mlagents.trainers").info(e)
-    env_path = "/ml-agents/{env_path}".format(env_path=env_path)
-    return env_path
-
-
 def create_environment_factory(
     env_path: Optional[str],
-    docker_target_name: Optional[str],
     no_graphics: bool,
-    seed: Optional[int],
+    seed: int,
     start_port: int,
     env_args: Optional[List[str]],
 ) -> Callable[[int, List[SideChannel]], BaseEnv]:
@@ -396,29 +368,16 @@ def create_environment_factory(
             raise UnityEnvironmentException(
                 f"Couldn't launch the {env_path} environment. Provided filename does not match any environments."
             )
-    docker_training = docker_target_name is not None
-    if docker_training and env_path is not None:
-        #     Comments for future maintenance:
-        #         Some OS/VM instances (e.g. COS GCP Image) mount filesystems
-        #         with COS flag which prevents execution of the Unity scene,
-        #         to get around this, we will copy the executable into the
-        #         container.
-        # Navigate in docker path and find env_path and copy it.
-        env_path = prepare_for_docker_run(docker_target_name, env_path)
-    seed_count = 10000
-    seed_pool = [np.random.randint(0, seed_count) for _ in range(seed_count)]
 
     def create_unity_environment(
         worker_id: int, side_channels: List[SideChannel]
     ) -> UnityEnvironment:
-        env_seed = seed
-        if not env_seed:
-            env_seed = seed_pool[worker_id % len(seed_pool)]
+        # Make sure that each environment gets a different seed
+        env_seed = seed + worker_id
         return UnityEnvironment(
             file_name=env_path,
             worker_id=worker_id,
             seed=env_seed,
-            docker_training=docker_training,
             no_graphics=no_graphics,
             base_port=start_port,
             args=env_args,

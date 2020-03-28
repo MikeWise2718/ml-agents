@@ -103,7 +103,7 @@ namespace MLAgents
                             "Python library version: {2}.",
                             pythonCommunicationVersion, initParameters.unityCommunicationVersion,
                             pythonPackageVersion
-                            );
+                        );
                     }
                     else
                     {
@@ -458,13 +458,20 @@ namespace MLAgents
             {
                 if (m_CurrentUnityRlOutput.AgentInfos.ContainsKey(behaviorName))
                 {
-                    if (output == null)
+                    if (m_CurrentUnityRlOutput.AgentInfos[behaviorName].CalculateSize() > 0)
                     {
-                        output = new UnityRLInitializationOutputProto();
-                    }
+                        // Only send the BrainParameters if there is a non empty list of
+                        // AgentInfos ready to be sent.
+                        // This is to ensure that The Python side will always have a first
+                        // observation when receiving the BrainParameters
+                        if (output == null)
+                        {
+                            output = new UnityRLInitializationOutputProto();
+                        }
 
-                    var brainParameters = m_UnsentBrainKeys[behaviorName];
-                    output.BrainParameters.Add(brainParameters.ToProto(behaviorName, true));
+                        var brainParameters = m_UnsentBrainKeys[behaviorName];
+                        output.BrainParameters.Add(brainParameters.ToProto(behaviorName, true));
+                    }
                 }
             }
 
@@ -505,13 +512,17 @@ namespace MLAgents
                     "side channels of the same id.", channelId));
             }
 
+            // Process any messages that we've already received for this channel ID.
             var numMessages = m_CachedMessages.Count;
             for (int i = 0; i < numMessages; i++)
             {
                 var cachedMessage = m_CachedMessages.Dequeue();
                 if (channelId == cachedMessage.ChannelId)
                 {
-                    sideChannel.OnMessageReceived(cachedMessage.Message);
+                    using (var incomingMsg = new IncomingMessage(cachedMessage.Message))
+                    {
+                        sideChannel.OnMessageReceived(incomingMsg);
+                    }
                 }
                 else
                 {
@@ -531,6 +542,34 @@ namespace MLAgents
             {
                 m_SideChannels.Remove(sideChannel.ChannelId);
             }
+        }
+
+        /// <inheritdoc/>
+        public T GetSideChannel<T>() where T: SideChannel
+        {
+            foreach (var sc in m_SideChannels.Values)
+            {
+                if (sc.GetType() == typeof(T))
+                {
+                    return (T) sc;
+                }
+            }
+            return null;
+        }
+
+        /// <inheritdoc/>
+        public List<T> GetSideChannels<T>() where T: SideChannel
+        {
+            var output = new List<T>();
+
+            foreach (var sc in m_SideChannels.Values)
+            {
+                if (sc.GetType() == typeof(T))
+                {
+                    output.Add((T) sc);
+                }
+            }
+            return output;
         }
 
         /// <summary>
@@ -576,13 +615,15 @@ namespace MLAgents
         /// <param name="dataReceived">The byte array of data received from Python.</param>
         public static void ProcessSideChannelData(Dictionary<Guid, SideChannel> sideChannels, byte[] dataReceived)
         {
-
-            while(m_CachedMessages.Count!=0)
+            while (m_CachedMessages.Count != 0)
             {
                 var cachedMessage = m_CachedMessages.Dequeue();
                 if (sideChannels.ContainsKey(cachedMessage.ChannelId))
                 {
-                    sideChannels[cachedMessage.ChannelId].OnMessageReceived(cachedMessage.Message);
+                    using (var incomingMsg = new IncomingMessage(cachedMessage.Message))
+                    {
+                        sideChannels[cachedMessage.ChannelId].OnMessageReceived(incomingMsg);
+                    }
                 }
                 else
                 {
@@ -619,7 +660,10 @@ namespace MLAgents
                         }
                         if (sideChannels.ContainsKey(channelId))
                         {
-                            sideChannels[channelId].OnMessageReceived(message);
+                            using (var incomingMsg = new IncomingMessage(message))
+                            {
+                                sideChannels[channelId].OnMessageReceived(incomingMsg);
+                            }
                         }
                         else
                         {

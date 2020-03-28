@@ -56,7 +56,6 @@ class TFPolicy(Policy):
 
         self.use_recurrent = trainer_parameters["use_recurrent"]
         self.memory_dict: Dict[str, np.ndarray] = {}
-        self.reward_signals: Dict[str, "RewardSignal"] = {}
         self.num_branches = len(self.brain.vector_action_space_size)
         self.previous_action_dict: Dict[str, np.array] = {}
         self.normalize = trainer_parameters.get("normalize", False)
@@ -174,17 +173,6 @@ class TFPolicy(Policy):
         """
         if batched_step_result.n_agents() == 0:
             return ActionInfo.empty()
-
-        agents_done = [
-            agent
-            for agent, done in zip(
-                batched_step_result.agent_id, batched_step_result.done
-            )
-            if done
-        ]
-
-        self.remove_memories(agents_done)
-        self.remove_previous_action(agents_done)
 
         global_agent_ids = [
             get_global_agent_id(worker_id, int(agent_id))
@@ -380,9 +368,11 @@ class TFPolicy(Policy):
 
     def create_input_placeholders(self):
         with self.graph.as_default():
-            self.global_step, self.increment_step_op, self.steps_to_increment = (
-                ModelUtils.create_global_steps()
-            )
+            (
+                self.global_step,
+                self.increment_step_op,
+                self.steps_to_increment,
+            ) = ModelUtils.create_global_steps()
             self.visual_in = ModelUtils.create_visual_input_placeholders(
                 self.brain.camera_resolutions
             )
