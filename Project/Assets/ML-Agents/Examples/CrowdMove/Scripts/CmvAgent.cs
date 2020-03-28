@@ -135,11 +135,12 @@ public class CmvAgent : Agent
             var modelData = ScriptableObject.CreateInstance<NNModelData>();
             modelData.Value = System.IO.File.ReadAllBytes(bbpath);
             nn.modelData = modelData;
-        }
-        LazyInitialize();
-        if (initializeBrain)
-        {
+            LazyInitialize();
             SetModel("CrowdMove", nn, InferenceDevice.CPU);
+        }
+        else
+        {
+            LazyInitialize();
         }
     }
     public override void Initialize()
