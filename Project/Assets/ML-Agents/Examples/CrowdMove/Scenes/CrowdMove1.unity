@@ -148,7 +148,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4caba445b6f40f47a25a6a18b321f41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agentRunSpeed: 0
+  runType: 0
+  brainName: CrowdMove.nn
+  brainPath: Assets/ML-Agents/Examples/CrowdMove/TFModels/
+  agentRunSpeed: 0.1
   agentRotationSpeed: 0
   goalScoredMaterial: {fileID: 2100000, guid: 6fb2214f236b2ba43be21f6b4211c234, type: 2}
   failMaterial: {fileID: 2100000, guid: 867932cf9d1d2db4d963b3de01d8a5bb, type: 2}
@@ -184,8 +187,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 255077126}
-  - component: {fileID: 255077125}
-  - component: {fileID: 255077124}
   m_Layer: 0
   m_Name: EventSystem
   m_TagString: Untagged
@@ -193,30 +194,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &255077124
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 255077123}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4f231c4fb786f3946a6b90b886c48677, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &255077125
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 255077123}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &255077126
 Transform:
   m_ObjectHideFlags: 0
@@ -379,6 +356,11 @@ PrefabInstance:
       propertyPath: redGoal
       value: 
       objectReference: {fileID: 1476550588}
+    - target: {fileID: 8302501480183251489, guid: 076ea380b3b0a5043a2a689676e387f2,
+        type: 3}
+      propertyPath: agmanPrefix
+      value: am2
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 076ea380b3b0a5043a2a689676e387f2, type: 3}
 --- !u!1 &762086410
@@ -692,6 +674,11 @@ PrefabInstance:
       propertyPath: area
       value: 
       objectReference: {fileID: 1010963368}
+    - target: {fileID: 8302501480183251489, guid: 076ea380b3b0a5043a2a689676e387f2,
+        type: 3}
+      propertyPath: agmanPrefix
+      value: am3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 076ea380b3b0a5043a2a689676e387f2, type: 3}
 --- !u!1 &1802662784 stripped
@@ -784,6 +771,11 @@ PrefabInstance:
       propertyPath: area
       value: 
       objectReference: {fileID: 1588574775}
+    - target: {fileID: 8302501480183251489, guid: 076ea380b3b0a5043a2a689676e387f2,
+        type: 3}
+      propertyPath: agmanPrefix
+      value: am1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 076ea380b3b0a5043a2a689676e387f2, type: 3}
 --- !u!1 &1969481031 stripped

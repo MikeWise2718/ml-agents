@@ -9,17 +9,11 @@ using Barracuda;
 
 public class CmvAgent : Agent
 {
-    // Note:
-    // We don't actually move the agent around, just its body
-    // The body does everything around physics, i.e. collisiton detection, ray perception, etc.
-    // This is so we can attach non-convex mesh-based objects (like TextMeshPro) without error messages
-    // It is a bit confusing
-
     public GameObject ground;
     public GameObject area;
     public GameObject redGoal;
     public List<CmvAgent> otherAgents;
-    public bool useVectorObs;
+    //public bool useVectorObs;
     public RayPerceptionSensorComponent3D rayPer;
 
     Material groundMaterial;
@@ -38,75 +32,10 @@ public class CmvAgent : Agent
     public int obsSize = 36;
 
 
-
-    public void SetupAgent(CmvAgMan cmvAgMan)
-    {
-        Debug.Log($"SetupAgent for {name}");
-        SetupAgentSpaceType(SpaceType.Continuous);
-        this.cmvAgMan = cmvAgMan;
-
-        // Initialize agent parameters
-        //brain = cmvAgMan.brain;
-        area = cmvAgMan.area;
-        ground = cmvAgMan.ground;
-        redGoal = cmvAgMan.redGoal;
-        //agentParameters = cmvAgMan.agentParameters;
-
-        useVectorObs = true;
-
-        // Create body
-        avatar = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        avatar.name = "body";
-        avatar.transform.parent = transform;
-        cmvagbod = avatar.AddComponent<CmvAgentBody>();
-        var visor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        var clder = visor.GetComponent<Collider>();
-        clder.enabled = false;
-        visor.transform.parent = avatar.transform;
-        visor.transform.localScale = new Vector3(0.95f, 0.25f, 0.5f);
-        visor.transform.position   = new Vector3(0,   0.5f, -0.25f);
-        CmvAgentBody.SetColorOfGo(visor, Color.black);
-        maxStep = cmvAgMan.cmvSettings.maxstep;
-
-        cmvagbod.Init(this);
-        var bhp = GetComponent<BehaviorParameters>();
-        //bhp.m_B.m_BehaviorName = "CrowdMove";
-        //bhp.m_UseHeuristic = true;
-        var bp = bhp.brainParameters;
-        bp.vectorActionSpaceType = SpaceType.Continuous;
-        bp.vectorObservationSize = obsSize;
-        bp.vectorActionSize = new int[] { 2 };
-        bp.vectorActionDescriptions = new string[] { "action1", "action2" };
-        this.sType = bp.vectorActionSpaceType;
-
-        //SetupAgentSpaceType(SpaceType.Continuous);
-
-
-        // Create banner textmeshpro
-        //var text = name + "\n" + name;
-        ////bannertmp = GraphAlgos.GraphUtil.MakeTextGo(gameObject, text, 1.5f, fvek: Vector3.back);
-        //bannergo = bannertmp.transform.parent.gameObject;
-        //bannergo.name = "banner";
-
-        groundRenderer = ground.GetComponent<Renderer>();
-        groundMaterial = groundRenderer.material;
-        cmvagbod.InitializeAgentBody();
-
-
-    }
-    private void Awake()
-    {
-
-    }
-    public void SetupAgentSpaceType(SpaceType reqstype,bool initializeBrain=true)
+    public void SetupAgentSpaceType(SpaceType reqstype, bool initializeBrain = true)
     {
         Debug.Log($"SetupAgentSpaceType for {name}");
         var bphp = GetComponent<BehaviorParameters>();
-        
-        //bphp.m_BehaviorName = "CrowdMove";
-        //bhp.m_UseHeuristic = true;
-        var fname = "CrowdMove.nn";
-        var bbpath = "Assets/ML-Agents/Examples/CrowdMove/TFModels/"+fname;
 
         var bp = bphp.brainParameters;
         bp.vectorActionSpaceType = reqstype;
@@ -129,20 +58,62 @@ public class CmvAgent : Agent
                 }
         }
         var nn = ScriptableObject.CreateInstance<NNModel>();
-        if (initializeBrain)
+        if (cmvAgMan.cmvSettings.runType== CmvSettings.RunType.BrainEquiped)
         {
-            //var modelData = new NNModelData();
+            //var modelData = new NNModelData(); // don't do it like this....
             var modelData = ScriptableObject.CreateInstance<NNModelData>();
-            modelData.Value = System.IO.File.ReadAllBytes(bbpath);
+            var bpath = cmvAgMan.cmvSettings.GetBrainPath();
+            modelData.Value = System.IO.File.ReadAllBytes(bpath);
             nn.modelData = modelData;
             LazyInitialize();
             SetModel("CrowdMove", nn, InferenceDevice.CPU);
         }
-        else
-        {
-            LazyInitialize();
-        }
     }
+    public void SetupAgent(CmvAgMan cmvAgMan)
+    {
+        Debug.Log($"SetupAgent for {name}");
+        this.cmvAgMan = cmvAgMan;
+        SetupAgentSpaceType(SpaceType.Continuous);
+        LazyInitialize();
+
+        area = cmvAgMan.area;
+        ground = cmvAgMan.ground;
+        redGoal = cmvAgMan.redGoal;
+        //useVectorObs = true;
+
+        // Create body
+        avatar = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        avatar.name = "body";
+        avatar.transform.parent = transform;
+        cmvagbod = avatar.AddComponent<CmvAgentBody>();
+        var visor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        var clder = visor.GetComponent<Collider>();
+        clder.enabled = false;
+        visor.transform.parent = avatar.transform;
+        visor.transform.localScale = new Vector3(0.95f, 0.25f, 0.5f);
+        visor.transform.position   = new Vector3(0,   0.5f, -0.25f);
+        CmvAgentBody.SetColorOfGo(visor, Color.black);
+        maxStep = cmvAgMan.cmvSettings.maxstep;
+
+        cmvagbod.Init(this);
+        var bhp = GetComponent<BehaviorParameters>();
+        var bp = bhp.brainParameters;
+        bp.vectorActionSpaceType = SpaceType.Continuous;
+        bp.vectorObservationSize = obsSize;
+        bp.vectorActionSize = new int[] { 2 };
+        bp.vectorActionDescriptions = new string[] { "action1", "action2" };
+        this.sType = bp.vectorActionSpaceType;
+
+        groundRenderer = ground.GetComponent<Renderer>();
+        groundMaterial = groundRenderer.material;
+        cmvagbod.InitializeAgentBody();
+
+    }
+    private void Awake()
+    {
+
+    }
+ 
     public override void Initialize()
     {
         Debug.Log($"Called Initialize Override on {name}");
@@ -233,12 +204,12 @@ public class CmvAgent : Agent
     int ncollected = 0;
     public override void CollectObservations(VectorSensor sensor)
     {
-        Debug.Log($"Called CollectObservations override for {name} useVectorobs:{useVectorObs} ncollected:{ncollected}");
-        if (useVectorObs)
-        {
-            var rayout = RayPerceptionSensor.Perceive(rayPer.GetRayPerceptionInput());
-            //sensor.AddObservation(rayout.rayOutputs[0]);
-        }
+        Debug.Log($"Called CollectObservations override for {name}");
+        //if (useVectorObs)
+        //{
+        //   // var rayout = RayPerceptionSensor.Perceive(rayPer.GetRayPerceptionInput());
+        //    //sensor.AddObservation(rayout.rayOutputs[0]);
+        //}
         ncollected++;
     }
     public Vector3 GetPos()
@@ -325,8 +296,8 @@ public class CmvAgent : Agent
                     break;
             }
         }
-        //var forceVek = dirToGo * academy.agentRunSpeed;
-        var forceVek = dirToGo*.25f;
+
+        var forceVek = dirToGo*cmvAgMan.cmvSettings.agentRunSpeed;
         var dist = Vector3.Magnitude(avatar.transform.position - lastpos);
         var force = Vector3.Magnitude(forceVek);
         //Debug.Log("Move "+name+" "+sType+" rot:"+rotateDir.ToString("F1")+" force:"+forceVek.ToString("F3")+" dst:"+dist.ToString("f1"));
@@ -355,7 +326,6 @@ public class CmvAgent : Agent
             }
             CmvAgentBody.SetColorOfGo(avatar,c);
         }
-        //cmvagbod.rpi.DumpRays();
         cmvagbod.AddMovement(rotateDir,forceVek, ForceMode.VelocityChange);
         cmvagbod.SyncToBody(bannergo);
         lastpos = avatar.transform.position;
@@ -372,7 +342,7 @@ public class CmvAgent : Agent
         {
             AddReward(-0.5f);
             hitFlashTimeMark = Time.time;
-            //StartCoroutine(GoalScoredSwapGroundMaterial(academy.failMaterial, 0.5f)); // happens too often to work
+            //StartCoroutine(GoalScoredSwapGroundMaterial(academy.failMaterial, 0.5f)); // happens too often to work well
         }
         MoveAgent(vectorAction);
     }
@@ -380,15 +350,15 @@ public class CmvAgent : Agent
     {
         SetReward(5.0f);
         StartCoroutine(GoalScoredSwapGroundMaterial(cmvAgMan.cmvSettings.goalScoredMaterial, 1.0f));
-        //academy.RegisterSuccess(this.nmoves);
+        cmvAgMan.cmvSettings.RegisterSuccess(this.nmoves);
 
-        //Debug.Log("Found goal - calling done in " + area.name + "   agent:" + name+" moves:"+nmoves);
+        Debug.Log("Found goal - calling done in " + area.name + "   agent:" + name+" moves:"+nmoves);
         EndEpisode();
     }
     public void RegisterCollision()
     {
         SetReward(-1.0f);
-        //academy.RegisterCollision();
+        cmvAgMan.cmvSettings.RegisterCollision();
 
         //Debug.Log("Found goal - calling done in " + area.name + "   agent:" + name+" moves:"+nmoves);
     }
@@ -397,7 +367,7 @@ public class CmvAgent : Agent
     {
         if (nmoves>0)
         {
-            //academy.RegisterFailure(this.nmoves);
+            cmvAgMan.cmvSettings.RegisterFailure(this.nmoves);
         }
         Debug.Log($"Called OnEpisodeBegin override on {name} in {area.name}  nmoves:{nmoves}");
         float agentOffset = -15f;

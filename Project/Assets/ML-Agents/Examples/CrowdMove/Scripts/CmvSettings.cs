@@ -6,7 +6,12 @@ using System;
 
 public class CmvSettings  : MonoBehaviour {
 
-    public float agentRunSpeed;
+    public enum RunType {  Heuristc, Training, BrainEquiped }
+    public RunType runType = CmvSettings.RunType.BrainEquiped;
+    public string brainName = "CrowdMove.nn";
+    public string brainPath = "Assets/ML-Agents/Examples/CrowdMove/TFModels/";
+
+    public float agentRunSpeed=0.25f;
     public float agentRotationSpeed;
     public Material goalScoredMaterial; // when a goal is scored the ground will use this material for a few seconds.
     public Material failMaterial; // when fail, the ground will use this material for a few seconds. 
@@ -21,6 +26,20 @@ public class CmvSettings  : MonoBehaviour {
     public int maxstep=2000;
     public int timeDelayMsecs=0;
 
+
+    public string GetBrainPath()
+    {
+        var bpath = brainPath;
+        if (bpath != "")
+        {
+            if (!bpath.EndsWith("/"))
+            {
+                bpath += "/";
+            }
+        }
+        var bname = bpath + brainName;
+        return bname;
+    }
     public void RegisterSuccess(int nsteps)
     {
         attempts++;

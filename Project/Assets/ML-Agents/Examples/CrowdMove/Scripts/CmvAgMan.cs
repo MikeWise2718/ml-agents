@@ -109,7 +109,9 @@ public class ParmProcessor
 public class CmvAgMan : MonoBehaviour
 {
     // Start is called before the first frame update
+    public string agmanPrefix;
     public int nagents = 1;
+
     public GameObject ground;
     public GameObject redGoal;
     public CmvSettings cmvSettings;
@@ -131,23 +133,12 @@ public class CmvAgMan : MonoBehaviour
         cmvSettings = GameObject.FindObjectOfType<CmvSettings>();
         area = transform.parent.gameObject;
         ground = area.transform.Find("Ground").gameObject;
-        //Debug.Log("Found ground");
         redGoal = area.transform.Find("redGoal").gameObject;
-        //Debug.Log("Found redGoal");
-        //agentParameters = new AgentParameters();
-        //agentParameters.maxStep = 3000;
-        //agentParameters.resetOnDone = true;
-        //agentParameters.onDemandDecision = false;
-        //agentParameters.numberOfActionsBetweenDecisions = 6;
-        //var ap = agentParameters;
 
-        //var bp = brain;
-
-        //Debug.Log("AreaInit " + nagents + " agents " + name + " maxStep:" + " " +
-        //          " vos:" + bp.vectorObservationSize + " vas:" + bp.vectorActionSize.Length);
         for (var i = 0; i < nagents; i++)
         {
-            var aname = "Agent" + i.ToString("D2");
+            var agnum = i.ToString("D2");
+            var aname = $"Agent-{agmanPrefix}-{agnum}";
             Debug.Log("Creating agent " + aname);
             var ago = new GameObject(aname);
             var dr = ago.AddComponent<DecisionRequester>();
@@ -163,10 +154,7 @@ public class CmvAgMan : MonoBehaviour
             cmvag.rayPer.CreateSensor();
 
             cmvag.LazyInitialize();
-
             cmvag.SetupAgent(this);
-
-
             //ago.SetActive(true);// causes agent's InitializeAgent() to be called
         }
         CrowdManInitAgents();
@@ -192,17 +180,16 @@ public class CmvAgMan : MonoBehaviour
 
     void Awake()
     {
-
+        CreateAgents();
     }
     void Start()
     {
+
     }
     private void OnEnable()
     {
-        CreateAgents();
     }
 
-    // Update is called once per frame
     void Update()
     {
         
