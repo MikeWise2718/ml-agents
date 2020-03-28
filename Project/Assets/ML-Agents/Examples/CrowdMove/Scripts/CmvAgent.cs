@@ -35,11 +35,14 @@ public class CmvAgent : Agent
     public GameObject avatar = null;
     public bool showStartMarker = false;
     public SpaceType sType = SpaceType.Continuous;
+    public int obsSize = 36;
 
 
 
     public void SetupAgent(CmvAgMan cmvAgMan)
     {
+        Debug.Log($"SetupAgent for {name}");
+        SetupAgentSpaceType(SpaceType.Continuous);
         this.cmvAgMan = cmvAgMan;
 
         // Initialize agent parameters
@@ -71,7 +74,7 @@ public class CmvAgent : Agent
         //bhp.m_UseHeuristic = true;
         var bp = bhp.brainParameters;
         bp.vectorActionSpaceType = SpaceType.Continuous;
-        bp.vectorObservationSize = 36;
+        bp.vectorObservationSize = obsSize;
         bp.vectorActionSize = new int[] { 2 };
         bp.vectorActionDescriptions = new string[] { "action1", "action2" };
         this.sType = bp.vectorActionSpaceType;
@@ -93,15 +96,11 @@ public class CmvAgent : Agent
     }
     private void Awake()
     {
-        SetupAgentSpaceType(SpaceType.Continuous);
+
     }
-    /// <summary>
-    /// The neural network model used when in inference mode.
-    /// This should not be set at runtime; use <see cref="Agent.SetModel(string,NNModel,InferenceDevice)"/>
-    /// to set it instead.
-    /// </summary>
-    public void SetupAgentSpaceType(SpaceType reqstype)
+    public void SetupAgentSpaceType(SpaceType reqstype,bool initializeBrain=true)
     {
+        Debug.Log($"SetupAgentSpaceType for {name}");
         var bphp = GetComponent<BehaviorParameters>();
         
         //bphp.m_BehaviorName = "CrowdMove";
@@ -116,28 +115,32 @@ public class CmvAgent : Agent
         {
             case SpaceType.Continuous:
                 {
-                    bp.vectorObservationSize = 36;
+                    bp.vectorObservationSize = obsSize;
                     bp.vectorActionSize = new int[] { 2 };
                     bp.vectorActionDescriptions = new string[] { "rotation", "translation" };
                     break;
                 }
             case SpaceType.Discrete:
                 {
-                    bp.vectorObservationSize = 36;
+                    bp.vectorObservationSize = obsSize;
                     bp.vectorActionSize = new int[] { 4 };
                     bp.vectorActionDescriptions = new string[] { "rotate-right", "rotate-left", "move-forward", "move-backward" };
                     break;
                 }
         }
-
-        var modelData = new NNModelData();
-        modelData.Value = System.IO.File.ReadAllBytes(bbpath);
         var nn = ScriptableObject.CreateInstance<NNModel>();
-        nn.modelData = modelData;
-        Debug.Log("before SetModel");
+        if (initializeBrain)
+        {
+            //var modelData = new NNModelData();
+            var modelData = ScriptableObject.CreateInstance<NNModelData>();
+            modelData.Value = System.IO.File.ReadAllBytes(bbpath);
+            nn.modelData = modelData;
+        }
         LazyInitialize();
-        SetModel("CrowdMove", nn, InferenceDevice.CPU);
-        Debug.Log("after SetModel");
+        if (initializeBrain)
+        {
+            SetModel("CrowdMove", nn, InferenceDevice.CPU);
+        }
     }
     public override void Initialize()
     {
