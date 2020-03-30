@@ -1,10 +1,3 @@
-// To get this to run in 0.15.1-hotfixes
-// 2020-03-29 14:00
-// Had to make the class DecisionRequest in com.unit.ml-agents/Runtime/DecisionRequester.cs public
-// still didn't run paused - checked maxsteps>0, Hustiric, BrainEquipped, AgentRunSpeed
-// not stepping for some reason
-
-
 using System;
 using System.Collections.Generic;
 using UnityEngine;

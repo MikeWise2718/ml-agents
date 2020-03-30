@@ -446,7 +446,6 @@ namespace MLAgents
         /// </summary>
         public void EnvironmentStep()
         {
-            Debug.Log("Academy EnvironmentStep");
             if (!m_HadFirstReset)
             {
                 ForcedFullReset();
