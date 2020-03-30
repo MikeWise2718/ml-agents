@@ -29,10 +29,10 @@ public class CmvAgent : Agent
     public GameObject avatar = null;
     public bool showStartMarker = false;
     public SpaceType sType = SpaceType.Continuous;
-    public int obsSize = 36;
+    public int obsSize = 0;
 
 
-    public void SetupAgentSpaceType(SpaceType reqstype, bool initializeBrain = true)
+    public void SetupAgentSpaceType(SpaceType reqstype)
     {
         Debug.Log($"SetupAgentSpaceType for {name}");
         var bphp = GetComponent<BehaviorParameters>();
@@ -135,14 +135,14 @@ public class CmvAgent : Agent
     }
     public override float[] Heuristic()
     {
-        Debug.Log($"Called Heuristic override on {name}");
+        Debug.Log($"Called Heuristic override on {name} sType:{sType}");
 
         switch (sType)
         {
             case SpaceType.Continuous:
                 {
-                    var r1 = Random.Range(-1, 1);
-                    var r2 = Random.Range(-1, 1);
+                    var r1 = Random.Range(-1f, 1f);
+                    var r2 = Random.Range(-1f, 1f);
                     return new float[] { r1, r2 };
                 }
             case SpaceType.Discrete:
@@ -210,6 +210,7 @@ public class CmvAgent : Agent
         //   // var rayout = RayPerceptionSensor.Perceive(rayPer.GetRayPerceptionInput());
         //    //sensor.AddObservation(rayout.rayOutputs[0]);
         //}
+        sensor.AddObservation(0);
         ncollected++;
     }
     public Vector3 GetPos()
@@ -334,7 +335,12 @@ public class CmvAgent : Agent
 
     public override void OnActionReceived(float[] vectorAction)
     {
-        Debug.Log($"Called OnActionReceived override for {name}");
+        var sva = "";
+        for(int i=0; i<vectorAction.Length; i++)
+        {
+            sva += vectorAction[i].ToString("f2")+"  ";
+        }
+        Debug.Log($"Called OnActionReceived override for {name} vectorAction:{sva}");
 
         AddReward(-1f / maxStep);
         var mindist = FindClosestAgentDist();
