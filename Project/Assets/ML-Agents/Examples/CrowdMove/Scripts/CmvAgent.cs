@@ -65,7 +65,7 @@ public class CmvAgent : Agent
             var bpath = cmvAgMan.cmvSettings.GetBrainPath();
             modelData.Value = System.IO.File.ReadAllBytes(bpath);
             nn.modelData = modelData;
-            LazyInitialize();
+            //LazyInitialize(); // gets called when component is added in OnEnable
             SetModel("CrowdMove", nn, InferenceDevice.CPU);
         }
     }
@@ -74,7 +74,7 @@ public class CmvAgent : Agent
         Debug.Log($"SetupAgent for {name}");
         this.cmvAgMan = cmvAgMan;
         SetupAgentSpaceType(SpaceType.Continuous);
-        LazyInitialize();
+        //LazyInitialize();// gets called when component is added in OnEnable
 
         area = cmvAgMan.area;
         ground = cmvAgMan.ground;
@@ -96,13 +96,6 @@ public class CmvAgent : Agent
         maxStep = cmvAgMan.cmvSettings.maxstep;
 
         cmvagbod.Init(this);
-        var bhp = GetComponent<BehaviorParameters>();
-        var bp = bhp.brainParameters;
-        bp.vectorActionSpaceType = SpaceType.Continuous;
-        bp.vectorObservationSize = obsSize;
-        bp.vectorActionSize = new int[] { 2 };
-        bp.vectorActionDescriptions = new string[] { "action1", "action2" };
-        this.sType = bp.vectorActionSpaceType;
 
         groundRenderer = ground.GetComponent<Renderer>();
         groundMaterial = groundRenderer.material;
@@ -111,7 +104,7 @@ public class CmvAgent : Agent
     }
     private void Awake()
     {
-
+        Debug.Log("CmvAgent Awake");
     }
  
     public override void Initialize()
